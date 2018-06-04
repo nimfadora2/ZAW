@@ -63,25 +63,27 @@ wzor_NH = np.zeros((128,128))
 nowy_wzor[32:32+64,32:32+64]=wzor_h
 wzor_NH[32:32+64,32:32+64]=wzor
 
+domFFT = fft2(dom)
+
 domFt = fftshift(fft2(dom))
 wzorFt = fftshift(fft2(nowy_wzor))
 
 filtr = highpassFilter(nowy_wzor.shape)
 
-dom_abs = abs(domFt)
-wzor_abs = abs(wzorFt)
+dom_filtr = filtr*domFt
+wzor_filtr = filtr*wzorFt
 
-dom_filtr = filtr*dom_abs
-wzor_filtr = filtr*wzor_abs
+dom_abs = abs(dom_filtr)
+wzor_abs = abs(wzor_filtr)
 
 R = 64
 M = 2*R/np.log(R)
 
-dom_log = cv2.logPolar(dom_filtr, (64,64), M, cv2.INTER_LINEAR + cv2.WARP_FILL_OUTLIERS)
-wzor_log = cv2.logPolar(wzor_filtr, (64,64), M, cv2.INTER_LINEAR + cv2.WARP_FILL_OUTLIERS)
+dom_log = cv2.logPolar(dom_abs, (64,64), M, cv2.INTER_LINEAR + cv2.WARP_FILL_OUTLIERS)
+wzor_log = cv2.logPolar(wzor_abs, (64,64), M, cv2.INTER_LINEAR + cv2.WARP_FILL_OUTLIERS)
 
-domFT2 = fftshift(fft2(dom_log))
-wzorFT2 = fftshift(fft2(wzor_log))
+domFT2 = (fft2(dom_log))
+wzorFT2 = (fft2(wzor_log))
 
 ccor = np.conj(wzorFT2)*domFT2
 modul = abs(ccor)
@@ -110,17 +112,17 @@ obraz_przesuniety2 = cv2.warpAffine(wzor_NH,macierz_tr2,
                                    (wzor_NH.shape[1], wzor_NH.shape[0]))
 ob_przFt2 = fft2(fftshift(obraz_przesuniety2))
 
-ccor_Ft = np.conj(ob_przFt)*domFt
+ccor_Ft = np.conj(ob_przFt)*domFFT
 modul_Ft = abs(ccor_Ft)
 last_Ft = ifft2(ifftshift(ccor_Ft/modul_Ft))
 y,x = np.unravel_index(np.argmax(last_Ft), last_Ft.shape)
 
-ccor_Ft2 = np.conj(ob_przFt2)*domFt
+ccor_Ft2 = np.conj(ob_przFt2)*domFFT
 modul_Ft2 = abs(ccor_Ft2)
 last_Ft2 = ifft2(ifftshift(ccor_Ft2/modul_Ft2))
 y2,x2 = np.unravel_index(np.argmax(last_Ft2), last_Ft2.shape)
 
-if last_Ft[y][x] > last_Ft2[x2][y2]:
+if last_Ft[y][x] > last_Ft2[y2][x2]:
     xk = x
     yk = y
     wzorzeck = obraz_przesuniety1
